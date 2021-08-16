@@ -23,3 +23,18 @@ function sr {
         CATTLE_BOOTSTRAP_PASSWORD=admin PATH=/home/$WSL_USER/bin CATTLE_DEV_MODE=30 KUBECONFIG=/home/$WSL_USER/kubeconfig.yml /home/$WSL_USER/bin/rancher --debug --no-cacerts
 }
 ```
+
+
+## SSH on your Windows agents
+### Add to the userdata of your Windows nodes during provisioning
+
+```powershell
+# Install the OpenSSH Server
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+
+# Start the sshd service
+Start-Service sshd
+
+# OPTIONAL but recommended:
+Set-Service -Name sshd -StartupType 'Automatic'
+```
