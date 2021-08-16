@@ -22,17 +22,14 @@ cat >> /etc/profile <<EOF
 export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml
 export PATH="$PATH:/var/lib/rancher/rke2/bin"
+crictl config --set runtime-endpoint=unix:///run/k3s/containerd/containerd.sock
 alias k=kubectl
 EOF
 
 export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml
 export PATH="$PATH:/var/lib/rancher/rke2/bin"
-
-while [ ! -f /var/lib/rancher/rke2/bin/kubectl ] ; do
-    echo "kubectl missing from PATH, sleeping for 5 seconds"
-    sleep 5
-done
+crictl config --set runtime-endpoint=unix:///run/k3s/containerd/containerd.sock
 
 mkdir -p /var/lib/rancher/rke2/server/manifests
 cat >> /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml <<EOF
