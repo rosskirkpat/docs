@@ -54,3 +54,11 @@ $env:PATH+=";c:\var\lib\rancher\rke2\bin;c:\usr\local\bin"
     [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";c:\var\lib\rancher\rke2\bin;c:\usr\local\bin",
     [EnvironmentVariableTarget]::Machine)
 ```
+
+
+## crictl runtime endpoint issues on Windows
+
+```powershell
+$Env:CONTAINER_RUNTIME_ENDPOINT = "npipe:////./pipe/containerd-containerd"
+crictl.exe ps -a
+```
