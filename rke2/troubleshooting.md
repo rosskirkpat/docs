@@ -58,6 +58,13 @@ $env:PATH+=";c:\var\lib\rancher\rke2\bin;c:\usr\local\bin"
 
 ## crictl runtime endpoint issues on Windows
 
+### The preferred method
+```powershell
+$Env:CRI_CONFIG_FILE = "C:\var\lib\rancher\rke2\agent\etc\crictl.yaml"
+crictl.exe ps -a
+```
+
+### The backup method in the case of a misconfigured or missing `crictl.yaml` file
 ```powershell
 $Env:CONTAINER_RUNTIME_ENDPOINT = "npipe:////./pipe/containerd-containerd"
 crictl.exe ps -a
