@@ -407,6 +407,26 @@ set NO_PROXY=localhost,127.0.0.1,*.rancher.com
 [Environment]::SetEnvironmentVariable("HTTP_PROXY", "<proxy>:<port>", [EnvironmentVariableTarget]::Machine)
 [Environment]::SetEnvironmentVariable("HTTPS_PROXY", "<proxy>:<port>", [EnvironmentVariableTarget]::Machine)
 [Environment]::SetEnvironmentVariable("NO_PROXY", "localhost,127.0.0.1,*.rancher.com", [EnvironmentVariableTarget]::Machine)
+$env:HTTP_PROXY="<proxy>:<port>"
+$env:HTTPS_PROXY="<proxy>:<port>"
+$env:NO_PROXY="localhost,127.0.0.1,0.0.0.0,172.0.0.0/8,10.0.0.0/8,cattle-system.svc"
+netsh winhttp set proxy <proxy>:<port>
+set HTTP_PROXY=<proxy>:<port>
+set HTTPS_PROXY=<proxy>:<port>
+set NO_PROXY=localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,cattle-system.svc
+[Environment]::SetEnvironmentVariable("HTTP_PROXY", "<proxy>:<port>",
+[EnvironmentVariableTarget]::Machine)
+[Environment]::SetEnvironmentVariable("HTTPS_PROXY", "<proxy>:<port>", [EnvironmentVariableTarget]::Machine)
+[Environment]::SetEnvironmentVariable("NO_PROXY", "localhost,127.0.0.1,0.0.0.0,172.0.0.0/8,10.0.0.0/8,cattle-system.svc", [EnvironmentVariableTarget]::Machine)
+Set-ItemProperty -path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" ProxyEnable -value 1
+Set-ItemProperty -path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" ProxyServer -value "https=$env:HTTPS_PROXY;http=$env:HTTP_PROXY"
+Set-ItemProperty -path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" ProxyOverride -value $env:NO_PROXY.Replace(',',';')
+
+# If you are using an FTP proxy, uncomment and set the following in addition to what is above
+#set FTP_PROXY=<proxy>:<port>
+#$env:FTP_PROXY="<proxy>:<port>"
+#[Environment]::SetEnvironmentVariable("FTP_PROXY", "<proxy>:<port>", [EnvironmentVariableTarget]::Machine)
+#Set-ItemProperty -path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" ProxyServer -value "https=$env:HTTPS_PROXY;http=$env:HTTP_PROXY;ftp=$env:FTP_PROXY"
 ```
 
 ----
