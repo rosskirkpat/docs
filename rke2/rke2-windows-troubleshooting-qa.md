@@ -138,9 +138,9 @@ Get-WmiObject Win32_Process -Filter "name = 'containerd.exe'" | Select-Object Co
 
 ```powershell
 # Wins
-Get-WmiObject win32_service | ?{$_.Name -like '*rancher-wins*'} | Select-Object -Property * | Format-List -Wrap -Autosize
+Get-WmiObject win32_service | ?{$_.Name -like '*rancher-wins*'} | Select-Object -Property * | Format-Table -wrap -AutoSize
 
-Get-WmiObject win32_service | ?{$_.Name -like '*rancher-wins*'} | select Name, DisplayName, PathName | Format-List -Wrap -Autosize
+Get-WmiObject win32_service | ?{$_.Name -like '*rancher-wins*'} | select Name, DisplayName, PathName | Format-Table -wrap -AutoSize
 
 Get-EventLog -LogName Application -Newest 20 -Source 'rancher-wins' 
 ```
