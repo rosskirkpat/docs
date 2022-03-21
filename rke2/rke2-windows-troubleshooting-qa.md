@@ -153,7 +153,7 @@ Get-EventLog -LogName 'Windows PowerShell' -Message *cloudbase*
 Get-EventLog -LogName System -Message *cloudbase* 
 Get-EventLog -LogName Application -Message *cloudbase* 
 
-Get-EventLog -LogName 'Windows PowerShell' -Message *cloudbase* | Select-Object -Property * | Format-List -Wrap -Autosize
+Get-EventLog -LogName 'Windows PowerShell' -Message *cloudbase* | Select-Object -Property * | Format-Table -Wrap -Autosize
 ```
 
 ----
