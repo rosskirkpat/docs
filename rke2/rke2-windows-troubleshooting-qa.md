@@ -346,14 +346,12 @@ Get-HnsNetwork
 # get the nat HNS network
 Get-HnsNetwork | where {$_.name -eq "nat"}
 
-# get the vxlan0 HNS network
-Get-HnsNetwork | where {$_.name -eq "vxlan0"} 
-
-# get the cbr0 (host-gw) HNS network
-Get-HnsNetwork | where {$_.name -eq "cbr0"}
-
 # get the calico HNS network
 Get-HnsNetwork | where {$_.name -eq "calico"}
+
+# get the external HNS Network for Calico
+Get-HnsNetwork | where {$_.name -eq "external"}
+
 
 ### HNS Endpoints
 
