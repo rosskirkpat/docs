@@ -24,5 +24,4 @@ refreshenv
 choco install golang --version 1.17.7 -y
 choco install kubernetes-helm --version 3.8.0 -y
 choco install vim -y
-
 ```
