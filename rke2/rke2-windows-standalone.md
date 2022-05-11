@@ -13,7 +13,7 @@ touch /etc/rancher/rke2/config.yaml
 cat << EOF >> /etc/rancher/rke2/config.yaml
 cni: "calico"
 write-kubeconfig-mode: "0644"
-token: "thisismytokenandiwillprotectit"
+token: thisismytokenandiwillprotectit
 EOF
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=$RKE2_VERSION sh - 
@@ -44,7 +44,7 @@ mkdir -p /etc/rancher/rke2
 touch /etc/rancher/rke2/config.yaml
 
 cat << EOF >> /etc/rancher/rke2/config.yaml
-token: "thisismytokenandiwillprotectit"
+token: thisismytokenandiwillprotectit
 server: $SERVER_NODE_IP_OR_DNS:9345
 EOF
 
@@ -72,7 +72,6 @@ Start-Service sshd
 Set-Service -Name sshd -StartupType 'Automatic'
 
 $RKE2_SERVER="IP_OR_DNS_NAME"
-$RKE2_TOKEN="OUTPUT_FROM_RKE2_SERVER"
 $RKE2_VERSION="v1.23.6+rke2r2"
 
 Invoke-WebRequest -URI https://github.com/rancher/rke2/blob/master/install.ps1 -Outfile install.ps1
