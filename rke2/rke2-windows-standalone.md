@@ -44,8 +44,8 @@ mkdir -p /etc/rancher/rke2
 touch /etc/rancher/rke2/config.yaml
 
 cat << EOF >> /etc/rancher/rke2/config.yaml
-token: thisismytokenandiwillprotectit
-server: $SERVER_NODE_IP_OR_DNS:9345
+token: <TOKEN_FROM_SERVER>
+server: https://<RKE2_SERVER>:9345
 EOF
 
 export PATH=$PATH:/var/lib/rancher/rke2/bin/
@@ -71,15 +71,14 @@ Start-Service sshd
 # OPTIONAL but recommended:
 Set-Service -Name sshd -StartupType 'Automatic'
 
-$RKE2_SERVER="IP_OR_DNS_NAME"
 $RKE2_VERSION="v1.23.6+rke2r2"
 
-Invoke-WebRequest -URI https://github.com/rancher/rke2/blob/master/install.ps1 -Outfile install.ps1
+Invoke-WebRequest -URI https://raw.githubusercontent.com/rancher/rke2/master/install.ps1 -Outfile install.ps1
 
 New-Item -Type Directory c:/etc/rancher/rke2 -Force
 Set-Content -Path c:/etc/rancher/rke2/config.yaml -Value @"
-server: https://$RKE2_SERVER:9345
-token: thisismytokenandiwillprotectit
+server: https://<RKE2_SERVER>:9345
+token: <TOKEN_FROM_SERVER>
 "@
 
 $env:PATH+=";c:\var\lib\rancher\rke2\bin;c:\usr\local\bin"
