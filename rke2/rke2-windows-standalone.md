@@ -51,7 +51,7 @@ EOF
 export PATH=$PATH:/var/lib/rancher/rke2/bin/
 crictl config --set runtime-endpoint=unix:///run/k3s/containerd/containerd.sock
 
-systemctl start rke2-server.service
+systemctl start rke2-agent.service
 ```
 
 ## RKE2 Windows Worker
