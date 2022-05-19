@@ -245,16 +245,31 @@ Get-WmiObject Win32_Process -Filter "name = 'containerd.exe'" | Select-Object Co
 ----
 
 ```powershell
-# disable certain features of microsoft defender to increase the speed of running/setting up rke2 agent on windows
+# Optimal Microsoft Defender configuration for RKE2 Windows Agent
+# This configuration is not *necessarily* production ready
 
-Get-MpPreference -DisableRealtimeMonitoring $true -DisableScriptScanning $true -DisableArchiveScanning $true -ExclusionPath c:\var\lib\rancher\rke2\bin,c:\usr\local\bin
+Set-MpPreference -DisableRealtimeMonitoring $true -DisableScriptScanning $true -DisableArchiveScanning $true -AttackSurfaceReductionOnlyExclusions "c:\var\lib\rancher\rke2\bin,c:\usr\local\bin" -ScanAvgCPULoadFactor 10 -ExclusionPath "c:\usr\local\bin\rke2.exe, c:\var\lib\rancher\rke2\bin\calico-node.exe, c:\var\lib\rancher\rke2\bin\containerd.exe, c:\var\lib\rancher\rke2\bin\kubelet.exe, c:\var\lib\rancher\rke2\bin\kube-proxy.exe, c:\var\lib\rancher\rke2\bin\host-local.exe, c:\var\lib\rancher\rke2\bin\calico-ipam.exe, c:\var\lib\rancher\rke2\bin\containerd-shim-runhcs-v1.exe, c:\var\lib\rancher\rke2\bin\ctr.exe, C:\var\lib\rancher\rke2\bin\win-overlay.exe, C:\var\lib\rancher\rke2\bin\crictl.exe" -ControlledFolderAccessAllowedApplications "C:\usr\local\bin\rke2.exe" -ExclusionProcess "rke2, calico-node, containerd, kubelet, kube-proxy, host-local, calico-ipam, containerd-shim-runhcs-v1, ctr, win-overlay, crictl"
 
-# verify our defender preferences were set
+if ($env:CATTLE_SERVER) {
+    Add-MpPreference -ExclusionIpAddress "$env:CATTLE_SERVER"
+}
+
+if ($env:CATTLE_AGENT_BIN_PREFIX) {
+  Add-MpPreference -ExclusionPath "$env:CATTLE_AGENT_BIN_PREFIX\bin\rke2.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\calico-node.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\containerd.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\kubelet.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\kube-proxy.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\host-local.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\calico-ipam.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\containerd-shim-runhcs-v1.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\ctr.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\win-overlay.exe, $env:CATTLE_AGENT_BIN_PREFIX\bin\crictl.exe"
+}
+```
+
+```powershell
+# Verify our defender preferences were set
+
 Get-MpPreference
 Get-MpComputerStatus
+```
 
-# disable Windows Firewall for all profiles
+```
+# How to Disable Windows Firewall for all Firewall Profiles
 # WARNING: THIS CAN BE CATASTROPHIC IF THIS IS A PUBLICLY ACCESSIBLE NODE
+
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 ```
 
