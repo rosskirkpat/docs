@@ -2,21 +2,20 @@ RKE1 to RKE2 Windows Migration Guidance
 
 - [1. Background](#1-background)
   - [1.1. Scheduling](#11-scheduling)
-    - [RKE1 Windows Scheduling](#rke1-windows-scheduling)
-      - [RKE1 Linux Node `NoSchedule` Taint](#rke1-linux-node-noschedule-taint)
-      - [RKE1 Linux Node `NoSchedule` Toleration for Workloads](#rke1-linux-node-noschedule-toleration-for-workloads)
-    - [RKE2 Windows Scheduling](#rke2-windows-scheduling)
-    - [RKE1 Windows Deployment](#rke1-windows-deployment)
-    - [RKE2 Windows Deployment Using NodeAffinity](#rke2-windows-deployment-using-nodeaffinity)
-  - [1.2. Supported Versions of Windows Server](#12-supported-versions-of-windows-server)
-    - [1.2.1. RKE1 Windows Supported Windows Server Versions](#121-rke1-windows-supported-windows-server-versions)
-      - [1.2.1.1. LTSC](#1211-ltsc)
-      - [1.2.1.2. SAC](#1212-sac)
-    - [1.2.2. RKE2 Windows Supports LTSC Versions of Windows Server Only](#122-rke2-windows-supports-ltsc-versions-of-windows-server-only)
-      - [1.2.2.1. LTSC](#1221-ltsc)
-  - [1.3. Kubernetes Version Support](#13-kubernetes-version-support)
-    - [1.3.1. Rancher Manager 2.5 vs. Rancher Manager 2.6 Support Matrix for Windows Clusters](#131-rancher-manager-25-vs-rancher-manager-26-support-matrix-for-windows-clusters)
-    - [1.3.2. Rancher Manager 2.5 vs Rancher Manager 2.6 Supported Kubernetes Versions for Provisioning RKE1 and RKE2 Windows Clusters](#132-rancher-manager-25-vs-rancher-manager-26-supported-kubernetes-versions-for-provisioning-rke1-and-rke2-windows-clusters)
+    - [1.1.1 RKE1 Windows Scheduling](#111-rke1-windows-scheduling)
+    - [1.1.2 RKE2 Windows Scheduling](#112-rke2-windows-scheduling)
+    - [1.2 Example Migrations](#12-example-migrations)
+      - [1.2.1 RKE1 to RKE2 Windows Workload](#121-rke1-to-rke2-windows-workload)
+      - [1.2.2 Example Migration of an RKE1 Windows Cluster Linux-Only Deployment](#122-example-migration-of-an-rke1-windows-cluster-linux-only-deployment)
+  - [1.3. Supported Versions of Windows Server](#13-supported-versions-of-windows-server)
+    - [1.3.1. RKE1 Windows Supported Windows Server Versions](#131-rke1-windows-supported-windows-server-versions)
+      - [1.3.1.1. LTSC](#1311-ltsc)
+      - [1.3.1.2. SAC](#1312-sac)
+    - [1.3.2. RKE2 Windows Supports LTSC Versions of Windows Server Only](#132-rke2-windows-supports-ltsc-versions-of-windows-server-only)
+      - [1.3.2.1. LTSC](#1321-ltsc)
+  - [1.4. Kubernetes Version Support](#14-kubernetes-version-support)
+    - [1.4.1. Rancher Manager 2.5 vs. Rancher Manager 2.6 Support Matrix for Windows Clusters](#141-rancher-manager-25-vs-rancher-manager-26-support-matrix-for-windows-clusters)
+    - [1.4.2. Rancher Manager 2.5 vs Rancher Manager 2.6 Supported Kubernetes Versions for Provisioning RKE1 and RKE2 Windows Clusters](#142-rancher-manager-25-vs-rancher-manager-26-supported-kubernetes-versions-for-provisioning-rke1-and-rke2-windows-clusters)
 - [2. Guiding Migrations of Workloads to RKE2 Windows](#2-guiding-migrations-of-workloads-to-rke2-windows)
   - [2.1. Steps for migrating RKE1 Windows Workloads](#21-steps-for-migrating-rke1-windows-workloads)
     - [2.1.1. In-Place Upgrade of Rancher Manager 2.5](#211-in-place-upgrade-of-rancher-manager-25)
@@ -28,30 +27,32 @@ RKE1 to RKE2 Windows Migration Guidance
 # 1. Background
 ## 1.1. Scheduling
 
-### RKE1 Windows Scheduling
+### 1.1.1 RKE1 Windows Scheduling
 
 RKE1 Windows Workload scheduling is based on taints and tolerations.
 
 Every Linux node in an RKE1 Windows cluster, regardless of the role assigned to it, will have have a default taint that prevents workloads to be scheduled on it unless the workload has a toleration configured. This is a major design feature for RKE1 Windows clusters which were designed to only run Windows workloads.
 
-`Taints: cattle.io/os=linux:NoSchedule`
+Default RKE1 Linux Node `NoSchedule` Taint
 
-#### RKE1 Linux Node `NoSchedule` Taint
 ```yml
 apiVersion: v1
 kind: Node
 spec:
+  ...
   taints:
   - effect: NoSchedule
     key: cattle.io/os
     value: linux
 ```
 
-#### RKE1 Linux Node `NoSchedule` Toleration for Workloads
+RKE1 Linux `NoSchedule` Toleration for Workloads
+
+The following toleration would allow an end-user workload to schedule on any Linux node of an RKE1 Windows cluster. These tolerations are used for various core Rancher services and workloads.  
 
 ```yml
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 spec:
   ...
   template:
@@ -64,15 +65,47 @@ spec:
         value: linux
 ```
 
-### RKE2 Windows Scheduling
+Aligning with best practices, any end-user workloads being ran on Linux nodes would be scheduled on those with the worker role only. 
 
-RKE2 Windows Workload scheduling is based on node selectors. Based on feedback and requests for hybrid workload support, RKE2 Windows was designed to support both Linux and Windows workloads by default. This is a marked change from RKE. Taints and tolerations were not incorporated into RKE2 with node selectors chosen as the defacto method of scheduling workloads in your RKE2 cluster.  Node selectors were a critical part of RKE1 Windows clusters, which makes for an easy migration of your workloads.
+```yml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  ...
+  template:
+    ...
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        key: cattle.io/os
+        operator: Equal
+        value: linux
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: node-role.kubernetes.io/worker
+                operator: In
+                values:
+                - "true"
+            weight: 100
+      ...
+```
 
-### RKE1 Windows Deployment
+### 1.1.2 RKE2 Windows Scheduling
+
+Based on feedback and requests for hybrid workload support, RKE2 Windows was designed to support both Linux and Windows workloads by default. RKE2 scheduling relies on node selectors by default. This is a marked change from RKE1 as taints and tolerations were not incorporated into RKE2. Node selectors were a critical part of RKE1 Windows clusters, which makes for an easy migration of your workloads. 
+
+### 1.2 Example Migrations
+
+#### 1.2.1 RKE1 to RKE2 Windows Workload
+
+Pre-Migration RKE1 Windows Deployment
 
 ```yaml
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 spec:
   ...
   template:
@@ -83,17 +116,14 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: beta.kubernetes.io/os
+              - key: kubernetes.io/os
                 operator: NotIn
                 values:
                 - linux
-    ...
-      tolerations:
-      - operator: Exists
 ```
 
 
-### RKE2 Windows Deployment Using NodeAffinity 
+Migrated RKE2 Windows Deployment Using `NodeAffinity` 
 
 ```yaml
 apiVersion: apps/v1
@@ -116,18 +146,66 @@ spec:
                       - windows
 ```
 
+#### 1.2.2 Example Migration of an RKE1 Windows Cluster Linux-Only Deployment
 
+Pre-Migration RKE1 Windows Cluster Linux-Only Deployment Targeting RKE1 Linux Worker Nodes
 
+```yml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  ...
+  template:
+    ...
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        key: cattle.io/os
+        operator: Equal
+        value: linux
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: node-role.kubernetes.io/worker
+                operator: In
+                values:
+                - "true"
+            weight: 100
+```
 
-## 1.2. Supported Versions of Windows Server
+Migrated RKE2 Hybrid Cluster Linux-Only Deployment Targeting RKE2 Linux Worker Nodes
 
-### 1.2.1. RKE1 Windows Supported Windows Server Versions
+```yml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  ...
+  template:
+    ...
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: node-role.kubernetes.io/worker
+                operator: In
+                values:
+                - "true"
+            weight: 100
+```
 
-#### 1.2.1.1. LTSC
+## 1.3. Supported Versions of Windows Server
+
+### 1.3.1. RKE1 Windows Supported Windows Server Versions
+
+#### 1.3.1.1. LTSC
 
 - Windows Server 2019 LTSC :heavy_check_mark: Will reach Mainstream EOL on Jan 9, 2024 and Extended EOL on Jan 9, 2029
 
-#### 1.2.1.2. SAC
+#### 1.3.1.2. SAC
 
 - Windows Server 20H2 SAC :heavy_exclamation_mark: Will reach EOL on Aug 9, 2022
 - Windows Server 2004 SAC :x: <mark>EOL Reached on Dec 14, 2021</mark>
@@ -135,9 +213,9 @@ spec:
 - Windows Server 1903 SAC :x: <mark>EOL Reached on Dec 8, 2020</mark>
 - Windows Server 1809 SAC :x: <mark>EOL Reached on Nov 10, 2020</mark> 
 
-### 1.2.2. RKE2 Windows Supports LTSC Versions of Windows Server Only
+### 1.3.2. RKE2 Windows Supports LTSC Versions of Windows Server Only
 
-#### 1.2.2.1. LTSC
+#### 1.3.2.1. LTSC
 
 - Windows Server 2019 LTSC :heavy_check_mark: Will reach Mainstream EOL on Jan 9, 2024 and Extended EOL on Jan 9, 2029
 - Windows Server 2022 LTSC :heavy_check_mark: Will reach Mainstream EOL on Oct 13, 2026 and Extended EOL on Oct 13, 2031
@@ -152,11 +230,11 @@ spec:
 [Windows Server 2019 LTSC Lifecycle](https://docs.microsoft.com/en-us/lifecycle/products/windows-server-2019)
 
 
-## 1.3. Kubernetes Version Support
+## 1.4. Kubernetes Version Support
 
 **NB.**  All versions listed below are SLA Supported per the [Rancher Manager v2.6.5 Support Matrix](https://www.suse.com/suse-rancher/support-matrix/all-supported-versions/rancher-v2-6-5/). Any version not listed should be assumed as being EOL and not supported under SLA by SUSE
 
-### 1.3.1. Rancher Manager 2.5 vs. Rancher Manager 2.6 Support Matrix for Windows Clusters
+### 1.4.1. Rancher Manager 2.5 vs. Rancher Manager 2.6 Support Matrix for Windows Clusters
 
 RKE1 vs RKE2 Windows Cluster Supported Kubernetes Versions
 
@@ -172,7 +250,7 @@ RKE1 vs RKE2 Windows Cluster Supported Kubernetes Versions
 | 1.25+               	|      	|   :heavy_check_mark:  	|
 
 
-### 1.3.2. Rancher Manager 2.5 vs Rancher Manager 2.6 Supported Kubernetes Versions for Provisioning RKE1 and RKE2 Windows Clusters
+### 1.4.2. Rancher Manager 2.5 vs Rancher Manager 2.6 Supported Kubernetes Versions for Provisioning RKE1 and RKE2 Windows Clusters
 
 | Rancher Manager Versions 	|    Kubernetes Versions   	| RKE1 	| RKE2 	|
 |:-----------------------:	|:------------------------:	|:----:	|:----:	|
