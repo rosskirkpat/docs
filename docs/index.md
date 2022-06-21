@@ -2,6 +2,12 @@ RKE1 to RKE2 Windows Migration Guidance
 
 - [1. Background](#1-background)
   - [1.1. Scheduling](#11-scheduling)
+    - [RKE1 Windows Scheduling](#rke1-windows-scheduling)
+      - [RKE1 Linux Node `NoSchedule` Taint](#rke1-linux-node-noschedule-taint)
+      - [RKE1 Linux Node `NoSchedule` Toleration for Workloads](#rke1-linux-node-noschedule-toleration-for-workloads)
+    - [RKE2 Windows Scheduling](#rke2-windows-scheduling)
+    - [RKE1 Windows Deployment](#rke1-windows-deployment)
+    - [RKE2 Windows Deployment Using NodeAffinity](#rke2-windows-deployment-using-nodeaffinity)
   - [1.2. Supported Versions of Windows Server](#12-supported-versions-of-windows-server)
     - [1.2.1. RKE1 Windows Supported Windows Server Versions](#121-rke1-windows-supported-windows-server-versions)
       - [1.2.1.1. LTSC](#1211-ltsc)
@@ -22,9 +28,95 @@ RKE1 to RKE2 Windows Migration Guidance
 # 1. Background
 ## 1.1. Scheduling
 
-RKE1 Windows Workload scheduling is based on taints and tolerations
+### RKE1 Windows Scheduling
 
-RKE2 Windows Workload scheduling is based on node selectors
+RKE1 Windows Workload scheduling is based on taints and tolerations.
+
+Every Linux node in an RKE1 Windows cluster, regardless of the role assigned to it, will have have a default taint that prevents workloads to be scheduled on it unless the workload has a toleration configured. This is a major design feature for RKE1 Windows clusters which were designed to only run Windows workloads.
+
+`Taints: cattle.io/os=linux:NoSchedule`
+
+#### RKE1 Linux Node `NoSchedule` Taint
+```yml
+apiVersion: v1
+kind: Node
+spec:
+  taints:
+  - effect: NoSchedule
+    key: cattle.io/os
+    value: linux
+```
+
+#### RKE1 Linux Node `NoSchedule` Toleration for Workloads
+
+```yml
+apiVersion: apps/v1
+kind: DaemonSet
+spec:
+  ...
+  template:
+    ...
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        key: cattle.io/os
+        operator: Equal
+        value: linux
+```
+
+### RKE2 Windows Scheduling
+
+RKE2 Windows Workload scheduling is based on node selectors. Based on feedback and requests for hybrid workload support, RKE2 Windows was designed to support both Linux and Windows workloads by default. This is a marked change from RKE. Taints and tolerations were not incorporated into RKE2 with node selectors chosen as the defacto method of scheduling workloads in your RKE2 cluster.  Node selectors were a critical part of RKE1 Windows clusters, which makes for an easy migration of your workloads.
+
+### RKE1 Windows Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+spec:
+  ...
+  template:
+    ...
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: NotIn
+                values:
+                - linux
+    ...
+      tolerations:
+      - operator: Exists
+```
+
+
+### RKE2 Windows Deployment Using NodeAffinity 
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+...
+spec:
+  ...
+  template:
+    ...
+    spec:
+      ...
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - windows
+```
+
+
 
 
 ## 1.2. Supported Versions of Windows Server
@@ -70,23 +162,23 @@ RKE1 vs RKE2 Windows Cluster Supported Kubernetes Versions
 
 | Kubernetes Versions 	| RKE1 	| RKE2 	|
 |---------------------	|:----:	|:----:	|
-| 1.18                	|   :white_check_mark:  	|      	|
-| 1.19                	|   :white_check_mark:  	|      	|
-| 1.20                	|   :white_check_mark:  	|      	|
-| 1.21                	|   :white_check_mark:  	|      	|
-| 1.22                	|   :white_check_mark:  	|   :white_check_mark:  	|
-| 1.23                	|      	|   :white_check_mark: 	|
-| 1.24                	|      	|  :white_check_mark:  	|
-| 1.25+               	|      	|   :white_check_mark:  	|
+| 1.18                	|   :heavy_check_mark:  	|      	|
+| 1.19                	|   :heavy_check_mark:  	|      	|
+| 1.20                	|   :heavy_check_mark:  	|      	|
+| 1.21                	|   :heavy_check_mark:  	|      	|
+| 1.22                	|   :heavy_check_mark:  	|   :heavy_check_mark:  	|
+| 1.23                	|      	|   :heavy_check_mark: 	|
+| 1.24                	|      	|  :heavy_check_mark:  	|
+| 1.25+               	|      	|   :heavy_check_mark:  	|
 
 
 ### 1.3.2. Rancher Manager 2.5 vs Rancher Manager 2.6 Supported Kubernetes Versions for Provisioning RKE1 and RKE2 Windows Clusters
 
 | Rancher Manager Versions 	|    Kubernetes Versions   	| RKE1 	| RKE2 	|
 |:-----------------------:	|:------------------------:	|:----:	|:----:	|
-| 2.5 - RKE1 Provisioning 	|      1.18 1.19 1.20      	|   :white_check_mark:  	|      	|
-| 2.6 - RKE1 Provisioning 	| 1.18 1.19 1.20 1.21 1.22 	|   :white_check_mark:  	|      	|
-| 2.6 - RKE2 Provisioning 	|   1.22 1.23 1.24 1.25+   	|      	|   :white_check_mark:  	|
+| 2.5 - RKE1 Provisioning 	|      1.18 1.19 1.20      	|   :heavy_check_mark:  	|      	|
+| 2.6 - RKE1 Provisioning 	| 1.18 1.19 1.20 1.21 1.22 	|   :heavy_check_mark:  	|      	|
+| 2.6 - RKE2 Provisioning 	|   1.22 1.23 1.24 1.25+   	|      	|   :heavy_check_mark:  	|
 
 
 # 2. Guiding Migrations of Workloads to RKE2 Windows
