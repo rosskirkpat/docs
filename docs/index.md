@@ -148,6 +148,11 @@ spec:
 
 #### 1.2.2. Example Migration of an RKE1 Windows Cluster Linux-Only Deployment
 
+ Important Things to Keep in Mind when Leveraging Node Selectors and Node Affinity
+ 
+ - If you specify both nodeSelector and nodeAffinity, both must be satisfied for the Pod to be scheduled onto a node.
+ - If you specify multiple matchExpressions associated with a single nodeSelectorTerms, then the Pod can be scheduled onto a node only if all the matchExpressions are satisfied.
+
 Pre-Migration RKE1 Windows Cluster Linux-Only Deployment Targeting RKE1 Linux Worker Nodes
 
 ```yml
@@ -166,16 +171,17 @@ spec:
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - preference:
+          - weight: 100
+            preference:
               matchExpressions:
               - key: node-role.kubernetes.io/worker
                 operator: In
                 values:
                 - "true"
-            weight: 100
+            
 ```
 
-Migrated RKE2 Hybrid Cluster Linux-Only Deployment Targeting RKE2 Linux Worker Nodes
+Migrated RKE2 Hybrid Cluster Linux-Only Deployment Targeting RKE2 Linux Worker Nodes Using Node Selectors
 
 ```yml
 apiVersion: apps/v1
@@ -185,18 +191,39 @@ spec:
   template:
     ...
     spec:
-      affinity:
+      nodeSelector:
+        kubernetes.io/os: "linux"
+        node-role.kubernetes.io/worker: "true"
+ ```
+ 
+ Migrated RKE2 Hybrid Cluster Linux-Only Deployment Targeting RKE2 Linux Worker Nodes Using Node Affinity
+
+ ```yaml
+ apiVersion: apps/v1
+kind: Deployment
+spec:
+  ...
+  template:
+    ...
+    spec:
+       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - preference:
+          - weight: 100
+            preference:
               matchExpressions:
               - key: node-role.kubernetes.io/worker
                 operator: In
                 values:
                 - "true"
-            weight: 100
-```
-
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+ ```
+ 
 ## 1.3. Supported Versions of Windows Server
 
 ### 1.3.1. RKE1 Windows Supported Windows Server Versions
